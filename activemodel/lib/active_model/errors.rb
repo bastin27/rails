@@ -60,7 +60,8 @@ module ActiveModel
   #
   # ```
   # person = Person.new
-  # person.validate!            # => ["cannot be nil"]
+  # person.validate!
+  # # => #<ActiveModel::Error:0x... @attribute=:name, @type=:blank, @options={message: "cannot be nil"}>
   # person.errors.full_messages # => ["name cannot be nil"]
   # # etc..
   # ```
@@ -455,7 +456,7 @@ module ActiveModel
     #
     # person = Person.create(address: '123 First St.')
     # person.errors.full_messages
-    # # => ["Name is too short (minimum is 5 characters)", "Name can't be blank", "Email can't be blank"]
+    # # => ["Name can't be blank", "Email can't be blank", "Name is too short (minimum is 5 characters)"]
     # ```
     def full_messages
       @errors.map(&:full_message)
@@ -473,10 +474,10 @@ module ActiveModel
     #
     # person = Person.create()
     # person.errors.full_messages_for(:name)
-    # # => ["Name is too short (minimum is 5 characters)", "Name can't be blank"]
+    # # => ["Name can't be blank", "Name is too short (minimum is 5 characters)"]
     #
-    # person.errors.full_messages_for(:name, :invalid)
-    # # => ["Name is invalid"]
+    # person.errors.full_messages_for(:name, :too_short)
+    # # => ["Name is too short (minimum is 5 characters)"]
     # ```
     def full_messages_for(attribute, type = nil)
       where(attribute, type).map(&:full_message).freeze
@@ -493,10 +494,10 @@ module ActiveModel
     #
     # person = Person.create()
     # person.errors.messages_for(:name)
-    # # => ["is too short (minimum is 5 characters)", "can't be blank"]
+    # # => ["can't be blank", "is too short (minimum is 5 characters)"]
     #
-    # person.errors.messages_for(:name, :invalid)
-    # # => ["is invalid"]
+    # person.errors.messages_for(:name, :too_short)
+    # # => ["is too short (minimum is 5 characters)"]
     # ```
     def messages_for(attribute, type = nil)
       where(attribute, type).map(&:message)
