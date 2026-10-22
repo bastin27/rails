@@ -1,3 +1,11 @@
+*   Fix `highlight` matching inside HTML entities.
+
+    `highlight("Fish & Chips", "amp")` no longer returns
+    `Fish &<mark>amp</mark>; Chips`, and phrases containing characters that
+    get escaped, such as `"Tom & Jerry"`, now match.
+
+    *Bastin*
+
 *   Fix the debug page for errors raised in view templates on Ruby 4.1.
 
     Ruby 4.1 builds prism into the interpreter as `Ruby::Prism`, and

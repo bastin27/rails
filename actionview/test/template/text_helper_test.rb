@@ -275,6 +275,29 @@ class TextHelperTest < ActionView::TestCase
     )
   end
 
+  def test_highlight_does_not_match_inside_html_entities
+    assert_equal "Fish &amp; Chips", highlight("Fish & Chips", "amp")
+    assert_equal "1 &lt; 2", highlight("1 < 2", "lt")
+    assert_equal "Fish &#38; Chips", highlight("Fish &#38; Chips", "38", sanitize: false)
+    assert_equal "Fish &amp; Chips", highlight("Fish & Chips", /amp/)
+  end
+
+  def test_highlight_with_phrase_containing_html_entities
+    assert_equal "<mark>Tom &amp; Jerry</mark>", highlight("Tom & Jerry", "Tom & Jerry")
+    assert_equal "Fish <mark>&amp;</mark> Chips", highlight("Fish & Chips", "&")
+    assert_equal "<mark>1 &lt; 2</mark>", highlight("1 < 2", "1 < 2")
+    assert_equal %(<mark>&quot;Tom&#39;s&quot;</mark>), highlight(%(&quot;Tom&#39;s&quot;), %("Tom's"), sanitize: false)
+    assert_equal "<b>Tom &amp; Jerry</b>", highlight("Tom & Jerry", "Tom & Jerry") { |match| "<b>#{match}</b>" }
+  end
+
+  def test_highlight_with_highlighter_back_references
+    assert_equal "a <b>beautiful</b> morning", highlight("a beautiful morning", "beautiful", highlighter: '<b>\\0</b>')
+    assert_equal "a <b>beautiful</b> morning", highlight("a beautiful morning", "beautiful", highlighter: '<b>\\&</b>')
+    assert_equal "a <b>beau</b> morning", highlight("a beautiful morning", /(?<word>beau)tiful/, highlighter: '<b>\\k<word></b>')
+    assert_equal "a [a ]beautiful morning", highlight("a beautiful morning", "beautiful", highlighter: '[\\`]\\1')
+    assert_equal "a \\beautiful morning", highlight("a beautiful morning", "beautiful", highlighter: '\\\\\\1')
+  end
+
   def test_highlight_does_not_modify_the_options_hash
     options = { highlighter: '<b>\1</b>', sanitize: false }
     passed_options = options.dup

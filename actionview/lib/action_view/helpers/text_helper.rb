@@ -189,16 +189,22 @@ module ActionView
         if text.blank? || phrases.blank?
           text || ""
         else
-          patterns = Array(phrases).map { |phrase| Regexp === phrase ? phrase : Regexp.escape(phrase) }
-          pattern = /(#{patterns.join("|")})/i
+          patterns = Array(phrases).map { |phrase| Regexp === phrase ? phrase : highlight_phrase_pattern(phrase) }
+          # Character references are matched as a whole, so that a phrase is
+          # never highlighted inside one.
+          pattern = /(#{patterns.join("|")})|&(?:#\d+|#x\h+|[a-z][a-z\d]*);/i
           highlighter = options.fetch(:highlighter, '<mark>\1</mark>') unless block
 
           text.scan(/<[^>]*|[^<]+/).each do |segment|
             if !segment.start_with?("<")
-              if block
-                segment.gsub!(pattern, &block)
-              else
-                segment.gsub!(pattern, highlighter)
+              segment.gsub!(pattern) do |match|
+                if $1.nil?
+                  match
+                elsif block
+                  block.call(match)
+                else
+                  expand_highlighter(highlighter, $~)
+                end
               end
             end
           end.join
@@ -552,6 +558,40 @@ module ActionView
       end
 
       private
+        HIGHLIGHT_ESCAPED_CHARACTERS = {
+          "&" => "(?>&amp;|&#0*38;|&#x0*26;|&)",
+          "<" => "(?>&lt;|&#0*60;|&#x0*3c;|<)",
+          ">" => "(?>&gt;|&#0*62;|&#x0*3e;|>)",
+          '"' => "(?>&quot;|&#0*34;|&#x0*22;|\")",
+          "'" => "(?>&apos;|&#0*39;|&#x0*27;|')",
+        }.freeze
+        private_constant :HIGHLIGHT_ESCAPED_CHARACTERS
+
+        # Builds a pattern for a literal phrase that also matches the
+        # characters of the phrase that may be escaped in the text.
+        def highlight_phrase_pattern(phrase)
+          phrase.to_s.each_char.map { |char| HIGHLIGHT_ESCAPED_CHARACTERS[char] || Regexp.escape(char) }.join
+        end
+
+        # Expands the back references in `highlighter` the way `String#sub`
+        # expands them in a replacement string.
+        def expand_highlighter(highlighter, match_data)
+          highlighter.gsub(/\\(?:(\d)|k<(\w+)>|([&`'\\]))/) do
+            if $1
+              match_data[$1.to_i]
+            elsif $2
+              match_data[$2]
+            else
+              case $3
+              when "&" then match_data[0]
+              when "`" then match_data.pre_match
+              when "'" then match_data.post_match
+              else "\\"
+              end
+            end.to_s
+          end
+        end
+
         # The cycle helpers need to store the cycles in a place that is
         # guaranteed to be reset every time a page is rendered, so it
         # uses an instance variable of ActionView::Base.
