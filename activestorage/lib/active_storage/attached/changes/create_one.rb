@@ -155,7 +155,7 @@ module ActiveStorage
         when Rack::Test::UploadedFile
           attachable.respond_to?(:open) ? attachable.open : attachable
         when Hash
-          attachable.fetch(:io)
+          attachable.symbolize_keys.fetch(:io)
         when File, Tempfile
           attachable
         when Pathname

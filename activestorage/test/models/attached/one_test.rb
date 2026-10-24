@@ -85,6 +85,12 @@ class ActiveStorage::OneAttachedTest < ActiveSupport::TestCase
     assert_equal "town.jpg", @user.avatar.filename.to_s
   end
 
+  test "attaching a new blob from a Hash with string keys to an existing record" do
+    @user.avatar.attach "io" => StringIO.new("STUFF"), "filename" => "town.jpg", "content_type" => "image/jpeg"
+    assert_equal "town.jpg", @user.avatar.filename.to_s
+    assert_equal "STUFF", @user.avatar.download
+  end
+
   test "attaching a new blob from a Hash with a path traversal key raises on Disk service" do
     assert_raises ActiveStorage::InvalidKeyError do
       @user.avatar.attach key: "../../etc/passwd", io: StringIO.new("malicious"), filename: "exploit.txt", content_type: "text/plain"

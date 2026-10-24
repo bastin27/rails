@@ -1,3 +1,11 @@
+*   Fix attaching a Hash with string keys raising `KeyError`.
+
+    ```ruby
+    user.avatar.attach("io" => file, "filename" => "avatar.jpg")
+    ```
+
+    *Bastin*
+
 *   Forward other options from `has_one_attached` and `has_many_attached` to the attachment association.
 
     ```ruby
